@@ -42,8 +42,8 @@ class Loaders:
         self.dataset_path = config.dataset_path
 
         # sample configuration
-        self.reid_p = config.reid_p
-        self.reid_k = config.reid_k
+        self.p = config.p
+        self.k = config.k
 
         # init loaders
         self._init_train_loaders()
@@ -54,7 +54,9 @@ class Loaders:
 
         # init datasets
         rgb_ir_train_dataset = CrossDataset(
-            all_samples.rgb_ir_samples_train, self.transform_reid
+            all_samples.rgb_samples_train,
+            all_samples.ir_samples_train,
+            self.transform_reid,
         )
         rgb_test_dataset = ReIDDataSet(
             all_samples.rgb_samples_test, self.transform_test
@@ -69,11 +71,9 @@ class Loaders:
         # reid train dataset
         self.rgb_ir_train_loader = data.DataLoader(
             copy.deepcopy(rgb_ir_train_dataset),
-            self.reid_p * self.reid_k,
+            self.p * self.k,
             shuffle=False,
-            sampler=CrossUniformSampler(
-                rgb_ir_train_dataset, self.reid_k, copy.copy(seeds)
-            ),
+            sampler=CrossUniformSampler(rgb_ir_train_dataset, self.k, copy.copy(seeds)),
             num_workers=16,
             drop_last=True,
         )

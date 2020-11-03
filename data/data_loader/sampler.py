@@ -118,7 +118,8 @@ class CrossUniformSampler(data.sampler.Sampler):
         rgb_index_list = []
         ir_index_list = []
         index_list = []
-        pids = list(set(self.pids))
+
+        pids = list(set(self.rgb_pids))
         pids.sort()
 
         seed = self.random_seeds.next_one()
@@ -127,37 +128,27 @@ class CrossUniformSampler(data.sampler.Sampler):
 
         for pid in pids:
             # find all indexes of the person of pid
-            index_of_pid_of_all = np.where(self.pids == pid)[0]
-
-            index_of_index = np.where(self.mids[index_of_pid_of_all] == 0)[
-                0
-            ]  # rgb index of index_of_pid
-            index_of_pid = index_of_pid_of_all[index_of_index]  # index of RGB
+            rgb_index_of_pid = np.where(self.rgb_pids == pid)[0]
             # randomly sample k images from the pid
-            if len(index_of_pid) >= self.k:
+            if len(rgb_index_of_pid) >= self.k:
                 rgb_index_list.extend(
-                    np.random.choice(index_of_pid, self.k, replace=False).tolist()
+                    np.random.choice(rgb_index_of_pid, self.k, replace=False).tolist()
                 )
             else:
                 rgb_index_list.extend(
-                    np.random.choice(index_of_pid, self.k, replace=True).tolist()
+                    np.random.choice(rgb_index_of_pid, self.k, replace=True).tolist()
                 )
-
-            index_of_index = np.where(self.mids[index_of_pid_of_all] == 1)[
-                0
-            ]  # ir index of index_of_pid
-            index_of_pid = index_of_pid_of_all[index_of_index]  # index of IR
+            # find all indexes of the person of pid
+            ir_index_of_pid = np.where(self.ir_pids == pid)[0]
             # randomly sample k images from the pid
-            if len(index_of_pid) >= self.k:
+            if len(ir_index_of_pid) >= self.k:
                 ir_index_list.extend(
-                    np.random.choice(index_of_pid, self.k, replace=False).tolist()
+                    np.random.choice(ir_index_of_pid, self.k, replace=False).tolist()
                 )
             else:
                 ir_index_list.extend(
-                    np.random.choice(index_of_pid, self.k, replace=True).tolist()
+                    np.random.choice(ir_index_of_pid, self.k, replace=True).tolist()
                 )
-
-            assert len(rgb_index_list) == len(ir_index_list), "error of sampling"
-            for rgb, ir in zip(ir_index_list, ir_index_list):
+            for rgb, ir in zip(rgb_index_list, ir_index_list):
                 index_list.extend((rgb, ir))
         return index_list
