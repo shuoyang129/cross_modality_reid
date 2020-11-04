@@ -132,7 +132,7 @@ solver = Engine(
     test_mode=args.test_mode,
 )
 # train
-solver.train(eval_freq=1)
+solver.train(eval_freq=10)
 # test
 solver.resume_latest_model()
 solver.eval(args.test_dataset)

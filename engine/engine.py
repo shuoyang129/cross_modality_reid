@@ -275,6 +275,7 @@ class Engine(object):
                     str(mINP_fc),
                 ]
             )
+            self.logging(mAP, cmc[:150])
             self.logging(mAP_fc, cmc_fc[:150])
         self.logging(table)
 
