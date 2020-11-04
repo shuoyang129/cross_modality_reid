@@ -1,4 +1,4 @@
-from .data_loader import Loaders
+from data_loader import Loaders
 
 if __name__ == "__main__":
     import argparse
@@ -12,4 +12,4 @@ if __name__ == "__main__":
     config.k = 8
     loaders = Loaders(config)
 
-    trainloader = Loaders.rgb_ir_train_loader
+    trainloader = loaders.rgb_ir_train_loader

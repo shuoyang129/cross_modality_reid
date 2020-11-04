@@ -9,17 +9,7 @@ def os_walk(folder_dir):
         return root, dirs, files
 
 
-class ReIDSamples:
-    """
-    rgb_samples_train
-    ir_samples_train
-    rgb_samples_val
-    ir_samples_val
-    all_samples_test
-    all_samples_train
-    all_samples_val
-    """
-
+class SysuSamples:
     def __init__(self, dataset_path, reorder):
 
         self.dataset_path = dataset_path
@@ -27,6 +17,7 @@ class ReIDSamples:
         # split rgb/ir cameras ids and train/val/test person ids
         self.rgb_camera_ids = [1, 2, 4, 5]
         self.ir_camera_ids = [3, 6]
+        self.in_door_rgb_camera_ids = [1, 2]
         self._load_person_id_split()
 
         # load samples from dataset
@@ -39,6 +30,7 @@ class ReIDSamples:
         self.rgb_samples_val = []
         self.ir_samples_val = []
         self.rgb_samples_test = []
+        self.in_door_rgb_samples_test = []
         self.ir_samples_test = []
 
         # rgb cameras
@@ -58,6 +50,8 @@ class ReIDSamples:
                         self.rgb_samples_val.append(sample)
                     elif int(person_id) in self.test_ids:
                         self.rgb_samples_test.append(sample)
+                        if cam_id in self.in_door_rgb_camera_ids:
+                            self.in_door_rgb_samples_test.append(sample)
 
         # ir cameras
         for cam_id in self.ir_camera_ids:

@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import init
 from resnet import resnet50, resnet18
 
-from crossmodalreid.utils import weights_init_kaiming, weights_init_classifier
+from ..utils import weights_init_kaiming, weights_init_classifier
 
 
 class Normalize(nn.Module):

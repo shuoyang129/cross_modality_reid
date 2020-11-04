@@ -61,6 +61,9 @@ class Loaders:
         rgb_test_dataset = ReIDDataSet(
             all_samples.rgb_samples_test, self.transform_test
         )
+        in_door_rgb_test_dataset = ReIDDataSet(
+            all_samples.in_door_rgb_samples_test, self.transform_test
+        )
         ir_test_dataset = ReIDDataSet(all_samples.ir_samples_test, self.transform_test)
         rgb_all_dataset = ReIDDataSet(all_samples.rgb_samples_all, self.transform_test)
         ir_all_dataset = ReIDDataSet(all_samples.ir_samples_all, self.transform_test)
@@ -79,11 +82,14 @@ class Loaders:
         )
 
         # init iters
-        self.reid_rgb_ir_train_iter = IterLoader(self.reid_rgb_train_loader)
+        self.reid_rgb_ir_train_iter = IterLoader(self.rgb_ir_train_loader)
 
         # test dataset
         self.rgb_test_loader = data.DataLoader(
             rgb_test_dataset, 32, shuffle=False, num_workers=8, drop_last=False
+        )
+        self.in_door_rgb_test_loader = data.DataLoader(
+            in_door_rgb_test_dataset, 32, shuffle=False, num_workers=8, drop_last=False
         )
         self.ir_test_loader = data.DataLoader(
             ir_test_dataset, 32, shuffle=False, num_workers=8, drop_last=False

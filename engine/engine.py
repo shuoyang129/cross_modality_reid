@@ -10,8 +10,8 @@ import torch
 import torch.nn as nn
 from prettytable import PrettyTable
 
-from crossmodalreid.evaluations import eval_sysu, eval_regdb, accuracy
-from crossmodalreid.utils import (
+from ..evaluations import eval_sysu, eval_regdb, accuracy
+from ..utils import (
     MultiItemAverageMeter,
     CatMeter,
     AverageMeter,
@@ -30,10 +30,10 @@ class Engine(object):
         criterion,
         optimizer,
         use_gpu,
-        test_modality,
+        test_dataset,
+        test_mode,
         data_parallel=False,
         sync_bn=False,
-        eval_metric="cosine",
     ):
 
         # base settings
@@ -43,8 +43,9 @@ class Engine(object):
         self.criterion = criterion
         self.optimizer = optimizer
         self.device = torch.device("cuda") if use_gpu else torch.device("cpu")
-        self.eval_metric = eval_metric
-        self.test_modality = test_modality
+        self.test_dataset = test_dataset
+        self.test_mode = test_mode
+        assert test_mode in ["all", "in_door"], "test_mode should be 'all' or 'in_door'"
 
         self.loss_meter = MultiItemAverageMeter()
         os.makedirs(self.results_dir, exist_ok=True)
@@ -139,7 +140,7 @@ class Engine(object):
             self.save_model(curr_epoch)
             # evaluate final model
             if eval_freq > 0 and curr_epoch % eval_freq == 0 and curr_epoch > 0:
-                self.eval(onebyone=False)
+                self.eval(self.test_dataset)
             # train
             results = self.train_an_epoch(curr_epoch)
             # logging
@@ -147,14 +148,16 @@ class Engine(object):
         # save final model
         self.save_model(self.optimizer.max_epochs)
         # evaluate final model
-        self.eval(onebyone=False)
+        self.eval(self.test_dataset)
 
     def train_an_epoch(self, epoch):
         self.set_train()
         self.loss_meter.reset()
-        for batch_idx, (input1, input2, label1, label2) in enumerate(
+        for batch_idx, (rgb_data, ir_data) in enumerate(
             self.dataloaders.rgb_ir_train_loader
         ):
+            input1, label1, _, _ = rgb_data
+            input2, label2, _, _ = ir_data
 
             labels = torch.cat((label1, label2), 0)
 
@@ -185,32 +188,56 @@ class Engine(object):
 
         return self.loss_meter.get_str()
 
-    def eval(self, dataset):
-        """
-        Args:
-            onebyone(bool): evaluate query one by one, otherwise in a parallel way
-        """
+    def eval(self, dataset, trial=1):
 
-        metric = self.eval_metric
         self.set_eval()
 
-        table = PrettyTable(["feature", "map", "rank-1", "rank-5", "rank-10", "mINP"])
+        table = PrettyTable(
+            ["dataset", "feature", "map", "rank-1", "rank-5", "rank-10", "mINP"]
+        )
 
-        query_feat_pool, query_feat_fc, query_label = self.extract_features(
-            self.dataloaders.query_loader, self.test_modality[0]
-        )
-        gall_feat_pool, gall_feat_fc, gallery_label = self.extract_features(
-            self.dataloaders.gallery_loader, self.test_modality[1]
-        )
-        distmat_pool = np.matmul(query_feat_pool, np.transpose(gall_feat_pool))
-        distmat_fc = np.matmul(query_feat_fc, np.transpose(gall_feat_fc))
         # evaluation
         if dataset == "regdb":
+            # gallery：IR 2 , query: RGB 1
+            query_feat_pool, query_feat_fc, query_label, _ = self.extract_features(
+                self.dataloaders.rgb_test_loader, 1
+            )
+            gall_feat_pool, gall_feat_fc, gallery_label, _ = self.extract_features(
+                self.dataloaders.ir_test_loader, 2
+            )
+            distmat_pool = np.matmul(query_feat_pool, np.transpose(gall_feat_pool))
+            distmat_fc = np.matmul(query_feat_fc, np.transpose(gall_feat_fc))
+
             cmc, mAP, mINP = eval_regdb(-distmat_pool, query_label, gallery_label)
             cmc_fc, mAP_fc, mINP_fc = eval_regdb(
                 -distmat_fc, query_label, gallery_label
             )
         elif dataset == "sysu":
+            # gallery：RGB 1  , query: IR 2
+            (
+                query_feat_pool,
+                query_feat_fc,
+                query_label,
+                query_cam,
+            ) = self.extract_features(self.dataloaders.ir_test_loader, 2)
+            if self.test_mode == "all":
+                (
+                    gall_feat_pool,
+                    gall_feat_fc,
+                    gallery_label,
+                    gall_cam,
+                ) = self.extract_features(self.dataloaders.rgb_test_loader, 1)
+            else:
+                (
+                    gall_feat_pool,
+                    gall_feat_fc,
+                    gallery_label,
+                    gall_cam,
+                ) = self.extract_features(self.dataloaders.in_door_rgb_test_loader, 1)
+
+            distmat_pool = np.matmul(query_feat_pool, np.transpose(gall_feat_pool))
+            distmat_fc = np.matmul(query_feat_fc, np.transpose(gall_feat_fc))
+
             cmc, mAP, mINP = eval_sysu(
                 -distmat_pool, query_label, gallery_label, query_cam, gall_cam
             )
@@ -219,10 +246,19 @@ class Engine(object):
             )
             # logging
             table.add_row(
-                ["pooling", str(mAP), str(cmc[0]), str(cmc[4]), str(cmc[9]), str(mINP)]
+                [
+                    dataset,
+                    "pooling",
+                    str(mAP),
+                    str(cmc[0]),
+                    str(cmc[4]),
+                    str(cmc[9]),
+                    str(mINP),
+                ]
             )
             table.add_row(
                 [
+                    dataset,
                     "bn",
                     str(mAP_fc),
                     str(cmc_fc[0]),
@@ -235,18 +271,20 @@ class Engine(object):
         self.logging(table)
 
     def extract_features(self, loader, modality, time_meter=None):
-
+        # modality 1: visible 2: thermal
         self.set_eval()
         # compute features
         features_meter = None
         bn_features_meter = None
         pids_meter = CatMeter()
+        cids_meter = CatMeter()
         with torch.no_grad():
             for batch in loader:
-                imgs, pids = batch
-                imgs, pids = (
+                imgs, pids, cids, _ = batch
+                imgs, pids, cids = (
                     imgs.to(self.device),
                     pids.to(self.device),
+                    cids.to(self.device),
                 )
                 if time_meter is not None:
                     torch.cuda.synchronize()
@@ -271,6 +309,7 @@ class Engine(object):
                 else:
                     assert 0
                 pids_meter.update(pids.data)
+                cids_meter.update(cids.data)
 
         if isinstance(features_meter, list):
             feats = [val.get_val_numpy() for val in features_meter]
@@ -279,5 +318,7 @@ class Engine(object):
             feats = features_meter.get_val_numpy()
             bn_feats = bn_features_meter.get_val_numpy()
         pids = pids_meter.get_val_numpy()
+        cids = cids_meter.get_val_numpy()
 
-        return feats, bn_feats, pids
+        return feats, bn_feats, pids, cids
+
