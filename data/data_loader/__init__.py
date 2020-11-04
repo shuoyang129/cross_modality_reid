@@ -3,7 +3,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 import copy
 import numpy as np
-from .samples import ReIDSamples
+from .samples import SysuSamples, RegDBSamples
 from .sampler import UniformSampler, Seeds, CrossUniformSampler
 from .loader import ReIDDataSet, IterLoader, CrossDataset
 from .random_erasing import RandomErasing
@@ -49,8 +49,10 @@ class Loaders:
         self._init_train_loaders()
 
     def _init_train_loaders(self):
-
-        all_samples = ReIDSamples(self.dataset_path, True)
+        if self.config.dataset == "sysu":
+            all_samples = SysuSamples(self.dataset_path, True)
+        else:
+            all_samples = RegDBSamples(self.dataset_path, True)
 
         # init datasets
         rgb_ir_train_dataset = CrossDataset(
