@@ -79,6 +79,7 @@ args.image_size = [args.img_h, args.img_w]
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 dataset = args.dataset
+assert dataset in ["sysu", "regdb"], "dataset must be sysu or regdb"
 if dataset == "sysu":
     args.dataset_path = os.path.join(args.dataset_root, "SYSU")
     class_num = 395
@@ -88,7 +89,6 @@ elif dataset == "regdb":
 results_dir = os.path.join(args.results_dir, dataset)
 
 dataloaders = Loaders(args)
-class_num = len(np.unique(dataloaders.train_color_label))
 net = embed_net(class_num, "off", args.pooling_type)  # off means without nonlocal
 
 # build loss
@@ -100,6 +100,21 @@ criterion = Criterion(
 )
 
 # build optimizer
+# ignored_params = list(map(id, net.bottleneck.parameters())) + list(
+#     map(id, net.classifier.parameters())
+# )
+# base_params = filter(lambda p: id(p) not in ignored_params, net.parameters())
+# optimizer = torch.optim.SGD(
+#     [
+#         {"params": base_params, "lr": 0.1 * args.lr},
+#         {"params": net.bottleneck.parameters(), "lr": args.lr},
+#         {"params": net.classifier.parameters(), "lr": args.lr},
+#     ],
+#     weight_decay=5e-4,
+#     momentum=0.9,
+#     nesterov=True,
+# )
+
 optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 lr_scheduler = WarmupMultiStepLR(
     optimizer, milestones=[40, 70], gamma=0.1, warmup_factor=0.01, warmup_epochs=10
@@ -108,7 +123,7 @@ optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs
 # run
 solver = Engine(
     results_dir=args.results_dir,
-    datamanager=dataloaders,
+    dataloaders=dataloaders,
     model=net,
     criterion=criterion,
     optimizer=optimizer,
@@ -117,7 +132,7 @@ solver = Engine(
     test_mode=args.test_mode,
 )
 # train
-solver.train(eval_freq=10)
+solver.train(eval_freq=1)
 # test
 solver.resume_latest_model()
 solver.eval(args.test_dataset)

@@ -40,6 +40,7 @@ class Loaders:
 
         #  dataset configuration
         self.dataset_path = config.dataset_path
+        self.dataset = config.dataset
 
         # sample configuration
         self.p = config.p
@@ -49,7 +50,7 @@ class Loaders:
         self._init_train_loaders()
 
     def _init_train_loaders(self):
-        if self.config.dataset == "sysu":
+        if self.dataset == "sysu":
             all_samples = SysuSamples(self.dataset_path, True)
         else:
             all_samples = RegDBSamples(self.dataset_path, True)
@@ -84,7 +85,7 @@ class Loaders:
         )
 
         # init iters
-        self.reid_rgb_ir_train_iter = IterLoader(self.rgb_ir_train_loader)
+        # self.reid_rgb_ir_train_iter = IterLoader(self.rgb_ir_train_loader)
 
         # test dataset
         self.rgb_test_loader = data.DataLoader(

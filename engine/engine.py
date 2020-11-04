@@ -10,8 +10,8 @@ import torch
 import torch.nn as nn
 from prettytable import PrettyTable
 
-from ..evaluations import eval_sysu, eval_regdb, accuracy
-from ..utils import (
+from evaluations import eval_sysu, eval_regdb, accuracy
+from utils import (
     MultiItemAverageMeter,
     CatMeter,
     AverageMeter,
@@ -158,19 +158,17 @@ class Engine(object):
         ):
             input1, label1, _, _ = rgb_data
             input2, label2, _, _ = ir_data
-
             labels = torch.cat((label1, label2), 0)
 
-            input1 = torch.Variable(input1.cuda())
-            input2 = torch.Variable(input2.cuda())
+            input1 = input1.to(self.device)
+            input2 = input2.to(self.device)
+            labels = labels.to(self.device)
 
-            labels = torch.Variable(labels.cuda())
+            feat, bnfeat, logit = self.model(input1, input2)
 
-            feat, bnfeat, logits = self.model(input1, input2)
-
-            acc = accuracy(logits[0], labels, [1])[0]
+            acc = accuracy(logit, labels, [1])[0]
             loss, loss_dict = self.criterion.compute(
-                feats=feat, head_feats=bnfeat, logits=logits[0], pids=labels
+                feats=feat, head_feats=bnfeat, logits=logit, pids=labels
             )
 
             loss_dict["Accuracy"] = acc
@@ -182,6 +180,16 @@ class Engine(object):
             self.optimizer.lr_scheduler.step(epoch)
             # record
             self.loss_meter.update(loss_dict)
+
+            # if batch_idx % 20 == 0:
+            #     self.logging(
+            #         EPOCH=epoch,
+            #         BATCH="{}/{}".format(
+            #             batch_idx, len(self.dataloaders.rgb_ir_train_loader)
+            #         ),
+            #         TIME=time_now(),
+            #         RESULTS=self.loss_meter.get_str(),
+            #     )
 
         # learning rate
         self.loss_meter.update({"LR": self.optimizer.optimizer.param_groups[0]["lr"]})

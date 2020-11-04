@@ -149,6 +149,6 @@ class CrossUniformSampler(data.sampler.Sampler):
                 ir_index_list.extend(
                     np.random.choice(ir_index_of_pid, self.k, replace=True).tolist()
                 )
-            for rgb, ir in zip(rgb_index_list, ir_index_list):
-                index_list.append((rgb, ir))
+        for rgb, ir in zip(rgb_index_list, ir_index_list):
+            index_list.append((rgb, ir))
         return index_list
