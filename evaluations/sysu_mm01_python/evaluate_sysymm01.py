@@ -1,7 +1,7 @@
-'''
+"""
 Author: Ancong Wu
 Contact:
-'''
+"""
 
 
 import scipy.io as sio
@@ -60,29 +60,29 @@ class DataCam(object):
 
     @classmethod
     def from_file(cls, filename):
-        mat = sio.loadmat(filename)['feature']
+        mat = sio.loadmat(filename)["feature"]
         data = dict([(i, f[0]) for i, f in enumerate(mat) if f[0].shape[1] != 0])
         ret = DataCam(data)
         return ret
 
 
 class Args(object):
-    feature_dir = './'
-    label_dir = './'
-    mode = 'all'
-    shot = 'single'
+    feature_dir = "./"
+    label_dir = "./"
+    mode = "all"
+    shot = "single"
     times = 10
-    proc_mode = 'multi'
+    proc_mode = "multi"
 
 
 def calc(gs_datacam, p_datacam, use_multi_proc):
-    '''
+    """
     -gs_datacam:(ntimes)
     -p_datacam:(1)
     -use_multi_proc:(1)
     -ret_cmc:(n_ranks)
     -ret_map:(ntimes)
-    '''
+    """
 
     ntimes = len(gs_datacam)
     p_args = [(g_datacam, p_datacam) for g_datacam in gs_datacam]
@@ -102,10 +102,10 @@ def calc(gs_datacam, p_datacam, use_multi_proc):
 
 
 def calc_one(args):
-    '''
+    """
     -ret_firsthit:(nranks)
     -ret_aps:(p_record)
-    '''
+    """
     g_datacam, p_datacam = args
     g_features, g_labels = g_datacam.to_list()
     p_features, p_labels = p_datacam.to_list()
@@ -127,14 +127,14 @@ def calc_one(args):
 
 
 def calc_rank(g_features, p_feature, g_labels, p_label):
-    '''
+    """
     -g_features:(n_record,n_feature)
     -p_feature:(n_feature)
     -g_labels:(n_record)
     -p_label:(1)
     -ret_ranks:(n_record_p_label_of_g)
     -ret_minranks:(1)
-    '''
+    """
     # calc dist
     dists = calc_dist(g_features, p_feature)
     # calc ranks
@@ -160,11 +160,11 @@ def calc_rank(g_features, p_feature, g_labels, p_label):
 
 
 def calc_dist(f1, f2):
-    '''
+    """
     -f1:(n_feature) or (n_record,n_feature)
     -f2:(n_feature)
     -ret:(1) or (n_record)
-    '''
+    """
     l1 = np.sqrt(np.sum(f1 ** 2, axis=-1))
     l2 = np.sqrt(np.sum(f2 ** 2, axis=-1))
     inner = np.sum(f1 * f2, axis=-1)
@@ -172,7 +172,7 @@ def calc_dist(f1, f2):
 
 
 def evaluate_sysymm01(feature_dir, mode, shot):
-    '''
+    """
     args:
         -args.data_dir:str, dir of data
         -args.mode:str, 'all'|'indoor'
@@ -185,54 +185,75 @@ def evaluate_sysymm01(feature_dir, mode, shot):
 
     note:the names of data files are hardcoded,
          including 'feature_cam*.mat','test_id.mat','test_id_indoor.mat','rand_perm_cam.mat'
-    '''
+    """
 
     args = Args()
     args.feature_dir = feature_dir
-    args.label_dir = os.path.join(os.getcwd(), 'tools/evaluation/sysu_mm01_python/data_split/')
+    args.label_dir = os.path.join(
+        os.getcwd(), "evaluation/sysu_mm01_python/data_split/"
+    )
     args.mode = mode
     args.shot = shot
     args.times = 10
-    args.proc_mode = 'multi'
-
+    args.proc_mode = "multi"
 
     # io-read
-    datacams = [DataCam.from_file(os.path.join(args.feature_dir, 'feature_cam{}.mat'.format(i + 1))) for i in range(6)]
-    if args.mode == 'indoor':
-        testid = sio.loadmat(os.path.join(args.label_dir, 'test_id_indoor.mat'))['id'][0]
-    elif args.mode == 'all':
-        testid = sio.loadmat(os.path.join(args.label_dir, 'test_id.mat'))['id'][0]
+    datacams = [
+        DataCam.from_file(
+            os.path.join(args.feature_dir, "feature_cam{}.mat".format(i + 1))
+        )
+        for i in range(6)
+    ]
+    if args.mode == "indoor":
+        testid = sio.loadmat(os.path.join(args.label_dir, "test_id_indoor.mat"))["id"][
+            0
+        ]
+    elif args.mode == "all":
+        testid = sio.loadmat(os.path.join(args.label_dir, "test_id.mat"))["id"][0]
     else:
-        raise Exception('invaild mode:{}'.format(args.mode))
+        raise Exception("invaild mode:{}".format(args.mode))
     testid -= 1
-    rand_perms = sio.loadmat(os.path.join(args.label_dir, 'rand_perm_cam.mat'))['rand_perm_cam']
-    rand_perms = [dict([(i, f[0] - 1) for i, f in enumerate(r[0])]) for r in rand_perms]  # [cam]{id}[10,n_record]
+    rand_perms = sio.loadmat(os.path.join(args.label_dir, "rand_perm_cam.mat"))[
+        "rand_perm_cam"
+    ]
+    rand_perms = [
+        dict([(i, f[0] - 1) for i, f in enumerate(r[0])]) for r in rand_perms
+    ]  # [cam]{id}[10,n_record]
 
     # decide nshot
-    if args.shot == 'single':
+    if args.shot == "single":
         nshot = 1
-    elif args.shot == 'multi':
+    elif args.shot == "multi":
         nshot = 10
     else:
-        raise Exception('invaild shot:{}'.format(args.shot))
+        raise Exception("invaild shot:{}".format(args.shot))
     # decide use_multi_proc
-    if args.proc_mode == 'single':
+    if args.proc_mode == "single":
         use_multi_proc = False
-    elif args.proc_mode == 'multi':
+    elif args.proc_mode == "multi":
         use_multi_proc = True
     else:
-        raise Exception('invaild proc_mode:{}'.format(args.proc_mode))
+        raise Exception("invaild proc_mode:{}".format(args.proc_mode))
 
     # select id
     datacams = [datacam.select_id(testid) for datacam in datacams]  # [cam]
     # select gallery
-    gs_datacams = [datacam.select_gallery(rand_perms[i], args.times, nshot) for i, datacam in enumerate(datacams)]
+    gs_datacams = [
+        datacam.select_gallery(rand_perms[i], args.times, nshot)
+        for i, datacam in enumerate(datacams)
+    ]
     gs_datacams = list(zip(*gs_datacams))  # [ntimes][cam]
 
-    if args.mode == 'all':
-        g1s_datacam = [DataCam.merge([g_datacams[i - 1] for i in [1, 4, 5]]) for g_datacams in gs_datacams]  # [ntimes]
+    if args.mode == "all":
+        g1s_datacam = [
+            DataCam.merge([g_datacams[i - 1] for i in [1, 4, 5]])
+            for g_datacams in gs_datacams
+        ]  # [ntimes]
         p1_datacam = datacams[3 - 1]  # [1]
-        g2s_datacam = [DataCam.merge([g_datacams[i - 1] for i in [1, 2, 4, 5]]) for g_datacams in gs_datacams]
+        g2s_datacam = [
+            DataCam.merge([g_datacams[i - 1] for i in [1, 2, 4, 5]])
+            for g_datacams in gs_datacams
+        ]
         p2_datacam = datacams[6 - 1]
 
         fh1, aps1 = calc(g1s_datacam, p1_datacam, use_multi_proc)
@@ -244,10 +265,16 @@ def evaluate_sysymm01(feature_dir, mode, shot):
         CMC = np.cumsum(fh)
         CMC = CMC / CMC[-1]
         mAP = np.mean(aps)
-    elif args.mode == 'indoor':
-        g1s_datacam = [DataCam.merge([g_datacams[i - 1] for i in [1]]) for g_datacams in gs_datacams]
+    elif args.mode == "indoor":
+        g1s_datacam = [
+            DataCam.merge([g_datacams[i - 1] for i in [1]])
+            for g_datacams in gs_datacams
+        ]
         p1_datacam = datacams[3 - 1]
-        g2s_datacam = [DataCam.merge([g_datacams[i - 1] for i in [1, 2]]) for g_datacams in gs_datacams]
+        g2s_datacam = [
+            DataCam.merge([g_datacams[i - 1] for i in [1, 2]])
+            for g_datacams in gs_datacams
+        ]
         p2_datacam = datacams[6 - 1]
 
         fh1, aps1 = calc(g1s_datacam, p1_datacam, use_multi_proc)
@@ -260,21 +287,20 @@ def evaluate_sysymm01(feature_dir, mode, shot):
         CMC = CMC / CMC[-1]
         mAP = np.mean(aps)
     else:
-        raise Exception('invaild mode:{}'.format(args.mode))
+        raise Exception("invaild mode:{}".format(args.mode))
 
     return CMC, mAP
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = Args()
-    args.data_dir = '/home/share/jianheng/rgbir'
-    args.mode = 'all'
-    args.shot = 'single'
+    args.data_dir = "/home/share/jianheng/rgbir"
+    args.mode = "all"
+    args.shot = "single"
     args.times = 10
-    args.proc_mode = 'multi'
+    args.proc_mode = "multi"
 
     CMC, mAP = main(args)
-
 
     print(CMC[:20])
     print(mAP)
