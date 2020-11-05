@@ -128,6 +128,7 @@ solver = Engine(
     criterion=criterion,
     optimizer=optimizer,
     use_gpu=True,
+    seed=args.seed,
     test_dataset=args.test_dataset,
     test_mode=args.test_mode,
 )

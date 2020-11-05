@@ -28,6 +28,7 @@ class Engine(object):
         use_gpu,
         test_dataset,
         test_mode,
+        seed,
         data_parallel=False,
         sync_bn=False,
     ):
@@ -41,6 +42,7 @@ class Engine(object):
         self.device = torch.device("cuda") if use_gpu else torch.device("cpu")
         self.test_dataset = test_dataset
         self.test_mode = test_mode
+        self.seed = seed
         assert test_mode in ["all", "in_door"], "test_mode should be 'all' or 'in_door'"
 
         self.loss_meter = MultiItemAverageMeter()
@@ -244,6 +246,7 @@ class Engine(object):
                 ) = self.extract_features(self.dataloaders.in_door_rgb_test_loader, 1)
 
             # the baseline code(original code) is random sample one image of every camera of the person, so here should be a filter to choose a sample per camera per person
+            np.random.seed(self.seed)
             choose_indexs = []
             unique_label = np.unique(gallery_label)
             for label in unique_label:
@@ -418,6 +421,7 @@ class Engine(object):
             for pid in range(1, 1 + pid_num_of_cids[cid - 1]):
                 xx.append([a_result.get_val(pid).astype(np.double)])
             xx = np.array(xx)
+            os.makedirs(os.path.join(self.results_dir, "test_features"), exist_ok=True)
             sio.savemat(
                 os.path.join(
                     self.results_dir, "test_features", "feature_cam{}.mat".format(cid)
