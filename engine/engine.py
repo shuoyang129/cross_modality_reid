@@ -277,22 +277,22 @@ class Engine(object):
                 [
                     dataset,
                     "pooling",
-                    "{%.2f}" % (mAP * 100),
-                    "{%.2f}" % (cmc[0] * 100),
-                    "{%.2f}" % (cmc[4] * 100),
-                    "{%.2f}" % (cmc[9] * 100),
-                    "{%.2f}" % (mINP * 100),
+                    "%.2f" % (mAP * 100),
+                    "%.2f" % (cmc[0] * 100),
+                    "%.2f" % (cmc[4] * 100),
+                    "%.2f" % (cmc[9] * 100),
+                    "%.2f" % (mINP * 100),
                 ]
             )
             table.add_row(
                 [
                     dataset,
                     "bn",
-                    "{%.2f}" % (mAP_fc * 100),
-                    "{%.2f}" % (cmc_fc[0] * 100),
-                    "{%.2f}" % (cmc_fc[4] * 100),
-                    "{%.2f}" % (cmc_fc[9] * 100),
-                    "{%.2f}" % (mINP_fc * 100),
+                    "%.2f" % (mAP_fc * 100),
+                    "%.2f" % (cmc_fc[0] * 100),
+                    "%.2f" % (cmc_fc[4] * 100),
+                    "%.2f" % (cmc_fc[9] * 100),
+                    "%.2f" % (mINP_fc * 100),
                 ]
             )
             self.logging(mAP, cmc[:150])
@@ -377,10 +377,10 @@ class Engine(object):
                 [
                     key,
                     "bn",
-                    "{%.2f}" % (mAP * 100),
-                    "{%.2f}" % (cmc[0] * 100),
-                    "{%.2f}" % (cmc[4] * 100),
-                    "{%.2f}" % (cmc[9] * 100),
+                    "%.2f" % (mAP * 100),
+                    "%.2f" % (cmc[0] * 100),
+                    "%.2f" % (cmc[4] * 100),
+                    "%.2f" % (cmc[9] * 100),
                 ]
             )
         self.logging(table)
