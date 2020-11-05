@@ -367,10 +367,18 @@ class Engine(object):
                     break
             if brief:
                 break
-        for key in results.keys():
-            self.logging(
-                "Time: {}\n Setting: {}\n {}".format(time_now(), key, results[key])
-            )
+        table = PrettyTable(
+            ["mode,shot", "feature", "map", "rank-1", "rank-5", "rank-10"]
+        )
+        keys = results.keys()
+        for key in keys:
+            cmc, mAP = results[key]
+            table.add_row(key, "bn", str(mAP), str(cmc[0]), str(cmc[4]), str(cmc[9]))
+        self.logging(table)
+        # for key in results.keys():
+        #     self.logging(
+        #         "Time: {}\n Setting: {}\n {}".format(time_now(), key, results[key])
+        #     )
 
     def compute_and_save_features(self, loaders):
         print("Time:{}.  Start to compute features".format(time_now()))

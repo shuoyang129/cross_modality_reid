@@ -137,3 +137,4 @@ solver.train(eval_freq=10)
 # test
 solver.resume_latest_model()
 solver.eval(args.test_dataset)
+solver.eval2(args.test_dataset)
