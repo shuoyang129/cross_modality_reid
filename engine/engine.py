@@ -229,6 +229,7 @@ class Engine(object):
                 query_cam,
             ) = self.extract_features(self.dataloaders.ir_test_loader, 2)
             if self.test_mode == "all":
+                print("test mode:  all")
                 (
                     gall_feat_pool,
                     gall_feat_fc,
@@ -236,12 +237,30 @@ class Engine(object):
                     gall_cam,
                 ) = self.extract_features(self.dataloaders.rgb_test_loader, 1)
             else:
+                print("test mode:  in_door")
                 (
                     gall_feat_pool,
                     gall_feat_fc,
                     gallery_label,
                     gall_cam,
                 ) = self.extract_features(self.dataloaders.in_door_rgb_test_loader, 1)
+
+            # the baseline code(original code) is random sample one image of every camera of the person, so here should be a filter to choose a sample per camera per person
+            choose_indexs = []
+            unique_label = np.unique(gallery_label)
+            for label in unique_label:
+                index = np.where(gallery_label == label)[0]
+                person_all_cam = gall_cam[index]
+                cam_unique = np.unique(person_all_cam)
+                for cam in cam_unique:
+                    all_i = np.where(person_all_cam == cam)[0]
+                    choose_i = np.random.choice(all_i)
+                    choose_indexs.append(index[choose_i])
+            choose_indexs = np.array(choose_indexs)
+            gall_feat_pool = gall_feat_pool[choose_indexs]
+            gall_feat_fc = gall_feat_fc[choose_indexs]
+            gallery_label = gallery_label[choose_indexs]
+            gall_cam = gall_cam[choose_indexs]
 
             distmat_pool = np.matmul(query_feat_pool, np.transpose(gall_feat_pool))
             distmat_fc = np.matmul(query_feat_fc, np.transpose(gall_feat_fc))

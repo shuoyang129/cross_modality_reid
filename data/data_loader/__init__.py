@@ -19,7 +19,9 @@ class Loaders:
                 transforms.Resize(config.image_size, interpolation=3),
                 transforms.ToTensor(),
                 transforms.Normalize(
-                    mean=[0.5] * 3, std=[0.5] * 3
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]
+                    # mean=[0.5] * 3, std=[0.5] * 3
                 ),  # we normalize it in reid model with imagenet mean and std
             ]
         )
@@ -27,12 +29,14 @@ class Loaders:
         self.transform_reid = transforms.Compose(
             [
                 transforms.Resize(config.image_size, interpolation=3),
+                transforms.Pad(10),
+                transforms.RandomCrop(config.image_size),
                 transforms.RandomHorizontalFlip(p=0.5),
-                # transforms.Pad(10),
-                # transforms.RandomCrop(config.image_size),
                 transforms.ToTensor(),
                 transforms.Normalize(
-                    mean=[0.5] * 3, std=[0.5] * 3
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]
+                    # mean=[0.5] * 3, std=[0.5] * 3
                 )  # we normalize it in reid model with imagenet mean and std
                 # RandomErasing(probability=0.5, mean=[0.485, 0.456, 0.406])
             ]
