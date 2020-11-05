@@ -139,7 +139,7 @@ class Engine(object):
             # evaluate final model
             if eval_freq > 0 and curr_epoch % eval_freq == 0 and curr_epoch > 0:
                 self.eval(self.test_dataset)
-                self.eval2(self.test_dataset)
+                # self.eval2(self.test_dataset)
             # train
             results = self.train_an_epoch(curr_epoch)
             # logging
@@ -148,7 +148,7 @@ class Engine(object):
         self.save_model(self.optimizer.max_epochs)
         # evaluate final model
         self.eval(self.test_dataset)
-        self.eval2(self.test_dataset)
+        # self.eval2(self.test_dataset)
 
     def train_an_epoch(self, epoch):
         self.set_train()
@@ -359,10 +359,10 @@ class Engine(object):
         results = {}
         for mode in ["all", "indoor"]:
             for number_shot in ["single", "multi"]:
-                cmc, map = evaluate_sysymm01(
+                cmc, mAP = evaluate_sysymm01(
                     os.path.join(self.results_dir, "test_features"), mode, number_shot
                 )
-                results["{},{}".format(mode, number_shot)] = [cmc, map]
+                results["{},{}".format(mode, number_shot)] = [cmc, mAP]
                 if brief:
                     break
             if brief:
@@ -445,6 +445,7 @@ class Engine(object):
                 ),
                 {"feature": xx},
             )
+        print("Time: {}. end to save features as .mat file".format(time_now()))
 
 
 class XX:

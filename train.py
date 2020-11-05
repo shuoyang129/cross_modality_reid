@@ -86,7 +86,6 @@ if dataset == "sysu":
 elif dataset == "regdb":
     args.dataset_path = os.path.join(args.dataset_root, "RegDB")
     class_num = 395
-results_dir = os.path.join(args.results_dir, dataset)
 
 dataloaders = Loaders(args)
 net = embed_net(class_num, "off", args.pooling_type)  # off means without nonlocal
@@ -100,26 +99,38 @@ criterion = Criterion(
 )
 
 # build optimizer
-# ignored_params = list(map(id, net.bottleneck.parameters())) + list(
-#     map(id, net.classifier.parameters())
-# )
-# base_params = filter(lambda p: id(p) not in ignored_params, net.parameters())
-# optimizer = torch.optim.SGD(
-#     [
-#         {"params": base_params, "lr": 0.1 * args.lr},
-#         {"params": net.bottleneck.parameters(), "lr": args.lr},
-#         {"params": net.classifier.parameters(), "lr": args.lr},
-#     ],
-#     weight_decay=5e-4,
-#     momentum=0.9,
-#     nesterov=True,
-# )
+if args.optim == "sgd":
+    args.lr = 0.1
+    ignored_params = list(map(id, net.bottleneck.parameters())) + list(
+        map(id, net.classifier.parameters())
+    )
+    base_params = filter(lambda p: id(p) not in ignored_params, net.parameters())
+    optimizer = torch.optim.SGD(
+        [
+            {"params": base_params, "lr": 0.1 * args.lr},
+            {"params": net.bottleneck.parameters(), "lr": args.lr},
+            {"params": net.classifier.parameters(), "lr": args.lr},
+        ],
+        weight_decay=5e-4,
+        momentum=0.9,
+        nesterov=True,
+    )
+else:
+    args.lr = 0.00035
+    optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 
-optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 lr_scheduler = WarmupMultiStepLR(
     optimizer, milestones=[40, 70], gamma=0.1, warmup_factor=0.01, warmup_epochs=10
 )
 optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs=120)
+
+args.results_dir = (
+    os.path.join(
+        args.results_dir,
+        dataset,
+        "{}_pooling_type_{}".format(args.optim, args.pooling_type),
+    ),
+)
 # run
 solver = Engine(
     results_dir=args.results_dir,
