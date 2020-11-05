@@ -190,7 +190,7 @@ def evaluate_sysymm01(feature_dir, mode, shot):
     args = Args()
     args.feature_dir = feature_dir
     args.label_dir = os.path.join(
-        os.getcwd(), "evaluation/sysu_mm01_python/data_split/"
+        os.getcwd(), "evaluations/sysu_mm01_python/data_split/"
     )
     args.mode = mode
     args.shot = shot
