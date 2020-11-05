@@ -34,7 +34,7 @@ class Engine(object):
     ):
 
         # base settings
-        self.results_dir = os.path.join(results_dir, "")
+        self.results_dir = results_dir
         self.dataloaders = dataloaders
         self.model = model
         self.criterion = criterion

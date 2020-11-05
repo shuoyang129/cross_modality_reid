@@ -124,12 +124,10 @@ lr_scheduler = WarmupMultiStepLR(
 )
 optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs=120)
 
-args.results_dir = (
-    os.path.join(
-        args.results_dir,
-        dataset,
-        "{}_pooling_type_{}".format(args.optim, args.pooling_type),
-    ),
+args.results_dir = os.path.join(
+    args.results_dir,
+    dataset,
+    "{}_pooling_type_{}".format(args.optim, args.pooling_type),
 )
 # run
 solver = Engine(
