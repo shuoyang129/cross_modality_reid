@@ -1,16 +1,12 @@
-"""
-@author:    Guan'an Wang
-@contact:   guan.wang0706@gmail.com
-"""
-
 import numpy as np
 import os
 import time
+import scipy.io as sio
 import torch
 import torch.nn as nn
 from prettytable import PrettyTable
 
-from evaluations import eval_sysu, eval_regdb, accuracy
+from evaluations import eval_sysu, eval_regdb, accuracy, evaluate_sysymm01
 from utils import (
     MultiItemAverageMeter,
     CatMeter,
@@ -141,6 +137,7 @@ class Engine(object):
             # evaluate final model
             if eval_freq > 0 and curr_epoch % eval_freq == 0 and curr_epoch > 0:
                 self.eval(self.test_dataset)
+                self.eval2(self.test_dataset)
             # train
             results = self.train_an_epoch(curr_epoch)
             # logging
@@ -149,6 +146,7 @@ class Engine(object):
         self.save_model(self.optimizer.max_epochs)
         # evaluate final model
         self.eval(self.test_dataset)
+        self.eval2(self.test_dataset)
 
     def train_an_epoch(self, epoch):
         self.set_train()
@@ -298,7 +296,7 @@ class Engine(object):
             self.logging(mAP_fc, cmc_fc[:150])
         self.logging(table)
 
-    def extract_features(self, loader, modality, time_meter=None):
+    def extract_features(self, data_loader, modality, time_meter=None):
         # modality 1: visible 2: thermal
         self.set_eval()
         # compute features
@@ -307,7 +305,7 @@ class Engine(object):
         pids_meter = CatMeter()
         cids_meter = CatMeter()
         with torch.no_grad():
-            for batch in loader:
+            for batch in data_loader:
                 imgs, pids, cids, _ = batch
                 imgs, pids, cids = (
                     imgs.to(self.device),
@@ -349,4 +347,98 @@ class Engine(object):
         cids = cids_meter.get_val_numpy()
 
         return feats, bn_feats, pids, cids
+
+    def eval2(self, dataset, brief=False):
+        self.set_eval()
+        if dataset != "sysu":
+            assert 0, " this test methods only used for sysu dataset"
+        self.compute_and_save_features(self.dataloaders)
+        results = {}
+        for mode in ["all", "indoor"]:
+            for number_shot in ["single", "multi"]:
+                cmc, map = evaluate_sysymm01(
+                    os.path.join(self.results_dir, "test_features"), mode, number_shot
+                )
+                results["{},{}".format(mode, number_shot)] = [cmc, map]
+                if brief:
+                    break
+            if brief:
+                break
+        for key in results.keys():
+            self.logging(
+                "Time: {}\n Setting: {}\n {}".format(time_now(), key, results[key])
+            )
+
+    def compute_and_save_features(self, loaders):
+        print("Time:{}.  Start to compute features".format(time_now()))
+        # compute features
+        features_meter, pids_meter, cids_meter = CatMeter(), CatMeter(), CatMeter()
+        self.set_eval()
+        with torch.no_grad():
+            for i, data in enumerate(loaders.rgb_all_loader):
+                # load data
+                images, pids, cids, _ = data
+                # forward
+                images = images.to(self.device)
+                feat_pool, feat_fc = self.model(images, images, 1)
+                # meter
+                features_meter.update(feat_fc.data)
+                pids_meter.update(pids.data)
+                cids_meter.update(cids.data)
+
+            for i, data in enumerate(loaders.ir_all_loader):
+                # load data
+                images, pids, cids, _ = data
+                # forward
+                images = images.to(self.device)
+                feat_pool, feat_fc = self.model(images, images, 2)
+                # meter
+                features_meter.update(feat_fc.data)
+                pids_meter.update(pids.data)
+                cids_meter.update(cids.data)
+
+        features = features_meter.get_val_numpy()
+        pids = pids_meter.get_val_numpy()
+        cids = cids_meter.get_val_numpy()
+
+        print("Time: {}.  Note: Start to save features as .mat file".format(time_now()))
+        # save features as .mat file
+        results = {1: XX(), 2: XX(), 3: XX(), 4: XX(), 5: XX(), 6: XX()}
+        for i in range(features.shape[0]):
+            feature = features[i, :]
+            feature = np.resize(feature, [1, feature.shape[0]])
+            cid, pid = cids[i], pids[i]
+            results[cid].update(pid, feature)
+
+        pid_num_of_cids = [333, 333, 533, 533, 533, 333]
+        cids = [1, 2, 3, 4, 5, 6]
+        for cid in cids:
+            a_result = results[cid]
+            xx = []
+            for pid in range(1, 1 + pid_num_of_cids[cid - 1]):
+                xx.append([a_result.get_val(pid).astype(np.double)])
+            xx = np.array(xx)
+            sio.savemat(
+                os.path.join(
+                    self.results_dir, "test_features", "feature_cam{}.mat".format(cid)
+                ),
+                {"feature": xx},
+            )
+
+
+class XX:
+    def __init__(self):
+        self.val = {}
+
+    def update(self, key, value):
+        if key not in list(self.val.keys()):
+            self.val[key] = value
+        else:
+            self.val[key] = np.concatenate([self.val[key], value], axis=0)
+
+    def get_val(self, key):
+        if key in list(self.val.keys()):
+            return self.val[key]
+        else:
+            return np.array([[]])
 
