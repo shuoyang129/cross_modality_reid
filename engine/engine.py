@@ -277,22 +277,22 @@ class Engine(object):
                 [
                     dataset,
                     "pooling",
-                    str(mAP),
-                    str(cmc[0]),
-                    str(cmc[4]),
-                    str(cmc[9]),
-                    str(mINP),
+                    "{:.02f}".format(mAP),
+                    "{:.02f}".format(cmc[0]),
+                    "{:.02f}".format(cmc[4]),
+                    "{:.02f}".format(cmc[9]),
+                    "{:.02f}".format(mINP),
                 ]
             )
             table.add_row(
                 [
                     dataset,
                     "bn",
-                    str(mAP_fc),
-                    str(cmc_fc[0]),
-                    str(cmc_fc[4]),
-                    str(cmc_fc[9]),
-                    str(mINP_fc),
+                    "{:.02f}".format(mAP),
+                    "{:.02f}".format(cmc[0]),
+                    "{:.02f}".format(cmc[4]),
+                    "{:.02f}".format(cmc[9]),
+                    "{:.02f}".format(mINP),
                 ]
             )
             self.logging(mAP, cmc[:150])
@@ -373,7 +373,16 @@ class Engine(object):
         keys = results.keys()
         for key in keys:
             cmc, mAP = results[key]
-            table.add_row(key, "bn", str(mAP), str(cmc[0]), str(cmc[4]), str(cmc[9]))
+            table.add_row(
+                [
+                    key,
+                    "bn",
+                    "{:.02f}".format(mAP),
+                    "{:.02f}".format(cmc[0]),
+                    "{:.02f}".format(cmc[4]),
+                    "{:.02f}".format(cmc[9]),
+                ]
+            )
         self.logging(table)
         # for key in results.keys():
         #     self.logging(
