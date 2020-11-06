@@ -96,7 +96,10 @@ elif dataset == "regdb":
     class_num = 395
 
 dataloaders = Loaders(args)
-net = embed_net(class_num, "off", args.pooling_type)  # off means without nonlocal
+if args.non_local:
+    net = embed_net(class_num, "on", args.pooling_type)  # on means with nonlocal
+else:
+    net = embed_net(class_num, "off", args.pooling_type)  # off means without nonlocal
 
 # build loss
 criterion = Criterion(
