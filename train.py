@@ -58,7 +58,10 @@ parser.add_argument(
     help="pooling_type:0-->avgpooling, 1-->gm_pooling, 2-->similarity,3-->avgpooling+similarity, 4--> gm_pooling+similarity",
 )
 parser.add_argument(
-    "--nonlocal", default=False, action="store_true", help="add non-local to backbone"
+    "--non_local",
+    default=False,
+    action="store_true",
+    help="add non_local module to backbone",
 )
 
 parser.add_argument("--optim", default="sgd", type=str, help="optimizer")
@@ -142,9 +145,9 @@ args.results_dir = os.path.join(
     "{}_pooling_type_{}".format(args.optim, args.pooling_type),
 )
 
-if args.nonlocal:
-    args.results_dir = os.path.join(args.results_dir, "nonlocal")
-    
+if args.non_local:
+    args.results_dir = args.results_dir + "_nonlocal"
+
 # run
 solver = Engine(
     results_dir=args.results_dir,
