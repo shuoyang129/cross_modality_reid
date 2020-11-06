@@ -127,11 +127,7 @@ if args.optim == "sgd":
         nesterov=True,
     )
     lr_scheduler = CustomMultiStepLR(
-        optimizer,
-        milestones=[200, 400],
-        gamma=0.1,
-        warmup_factor=0.01,
-        warmup_epochs=100,
+        optimizer, milestones=[200, 400], gamma=0.1, warmup_epochs=100,
     )
 else:
     args.lr = 0.00035
