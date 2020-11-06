@@ -14,6 +14,7 @@ from optim import (
     WarmupMultiStepLR,
     DelayedCosineAnnealingLR,
     WarmupCosineAnnealingLR,
+    CustomMultiStepLR,
 )
 from evaluations import eval_sysu, eval_regdb, accuracy
 from data import Loaders
@@ -56,6 +57,10 @@ parser.add_argument(
     type=int,
     help="pooling_type:0-->avgpooling, 1-->gm_pooling, 2-->similarity,3-->avgpooling+similarity, 4--> gm_pooling+similarity",
 )
+parser.add_argument(
+    "--nonlocal", default=False, action="store_true", help="add non-local to backbone"
+)
+
 parser.add_argument("--optim", default="sgd", type=str, help="optimizer")
 parser.add_argument(
     "--lr", default=0.00035, type=float, help="learning rate, 0.00035 for adam"
@@ -115,20 +120,30 @@ if args.optim == "sgd":
         momentum=0.9,
         nesterov=True,
     )
+    lr_scheduler = CustomMultiStepLR(
+        optimizer,
+        milestones=[200, 400],
+        gamma=0.1,
+        warmup_factor=0.01,
+        warmup_epochs=100,
+    )
 else:
     args.lr = 0.00035
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
+    lr_scheduler = WarmupMultiStepLR(
+        optimizer, milestones=[200, 400], gamma=0.1, warmup_epochs=100,
+    )
 
-lr_scheduler = WarmupMultiStepLR(
-    optimizer, milestones=[40, 70], gamma=0.1, warmup_factor=0.01, warmup_epochs=10
-)
-optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs=120)
+optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs=800)
 
 args.results_dir = os.path.join(
     args.results_dir,
     dataset,
     "{}_pooling_type_{}".format(args.optim, args.pooling_type),
 )
+if args.nonlocal:
+    args.results_dir = os.path.join(args.results_dir, "nonlocal")
+    
 # run
 solver = Engine(
     results_dir=args.results_dir,
