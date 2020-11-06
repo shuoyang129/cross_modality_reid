@@ -141,6 +141,7 @@ args.results_dir = os.path.join(
     dataset,
     "{}_pooling_type_{}".format(args.optim, args.pooling_type),
 )
+
 if args.nonlocal:
     args.results_dir = os.path.join(args.results_dir, "nonlocal")
     
