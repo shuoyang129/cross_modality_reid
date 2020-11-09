@@ -175,7 +175,7 @@ optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs
 args.results_dir = os.path.join(
     args.results_dir,
     dataset,
-    "{}_pooling_type_{}".format(args.optim, args.pooling_type),
+    "{}_pooling_{}_loss_{}".format(args.optim, args.pooling_type, args.loss_type),
 )
 
 if args.non_local:
