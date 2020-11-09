@@ -88,7 +88,11 @@ class Criterion(object):
                 else:  # for single-head model (e,g, ide, bot)
                     loss = weight * criterion(kwargs["logits"], kwargs["pids"])
 
-            elif criterion.__class__.__name__ in ["TripletLoss"]:
+            elif criterion.__class__.__name__ in [
+                "TripletLoss",
+                "OriTripletLoss",
+                "TripletLoss_WRT",
+            ]:
                 if isinstance(
                     kwargs["feats"], list
                 ):  # for multi-head model (e.g. pcb), compute their average loss
