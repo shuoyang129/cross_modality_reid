@@ -133,13 +133,28 @@ class Engine(object):
             start_epoch = self.resume_latest_model()
             start_epoch = 0 if start_epoch is None else start_epoch
         # train loop
+        best_epoch = start_epoch
+        best_rank1 = -100
+        best_rank1_map = -1
         for curr_epoch in range(start_epoch, self.optimizer.max_epochs):
             # save model
             self.save_model(curr_epoch)
             # evaluate final model
             if eval_freq > 0 and curr_epoch % eval_freq == 0 and curr_epoch > 0:
-                self.eval(self.test_dataset)
+                cmc, mAP = self.eval(self.test_dataset)
                 # self.eval2(self.test_dataset)
+                if cmc[0] > best_rank1:
+                    best_epoch = curr_epoch
+                    best_rank1 = cmc[0]
+                    best_rank1_map = mAP
+                print(
+                    "best rank1: ",
+                    best_rank1,
+                    "mAP:",
+                    best_rank1_map,
+                    "epoch: ",
+                    best_epoch,
+                )
             # train
             results = self.train_an_epoch(curr_epoch)
             # logging
@@ -298,6 +313,7 @@ class Engine(object):
             self.logging(mAP, cmc[:150])
             self.logging(mAP_fc, cmc_fc[:150])
         self.logging(table)
+        return cmc_fc, mAP_fc
 
     def extract_features(self, data_loader, modality, time_meter=None):
         # modality 1: visible 2: thermal

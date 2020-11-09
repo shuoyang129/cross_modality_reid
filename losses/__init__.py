@@ -10,4 +10,5 @@ from .center_loss import CenterLoss
 from .self_distill_loss import ProbSelfDistillLoss, SIMSelfDistillLoss
 from .kl_loss import KLLoss
 from .criterion import Criterion
+from .loss import OriTripletLoss, TripletLoss_WRT
 

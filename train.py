@@ -8,7 +8,13 @@ import argparse
 
 from models import embed_net
 from utils import *
-from losses import CrossEntropyLabelSmooth, TripletLoss, Criterion
+from losses import (
+    CrossEntropyLabelSmooth,
+    TripletLoss,
+    Criterion,
+    OriTripletLoss,
+    TripletLoss_WRT,
+)
 from optim import (
     Optimizer,
     WarmupMultiStepLR,
@@ -69,6 +75,9 @@ parser.add_argument(
     "--lr", default=0.00035, type=float, help="learning rate, 0.00035 for adam"
 )
 parser.add_argument(
+    "--loss_type", default="base", type=str, help="['base', 'agw', 'other']"
+)
+parser.add_argument(
     "--margin", default=0.3, type=float, metavar="margin", help="triplet loss margin"
 )
 parser.add_argument(
@@ -102,12 +111,35 @@ else:
     net = embed_net(class_num, "off", args.pooling_type)  # off means without nonlocal
 
 # build loss
-criterion = Criterion(
-    [
-        {"criterion": CrossEntropyLabelSmooth(num_classes=class_num), "weight": 1.0,},
-        {"criterion": TripletLoss(margin="soft", metric="euclidean"), "weight": 1.0,},
-    ]
-)
+if args.loss_type == "base":
+    criterion = Criterion(
+        [
+            {"criterion": nn.CrossEntropyLoss(), "weight": 1.0,},
+            # {"criterion": CrossEntropyLabelSmooth(num_classes=class_num), "weight": 1.0,},
+            # {"criterion": TripletLoss(margin="0.3", metric="euclidean"), "weight": 1.0,},
+            {"criterion": OriTripletLoss(margin=args.margin), "weight": 1.0,},
+        ]
+    )
+elif args.loss_type == "agw":
+    criterion = Criterion(
+        [
+            {"criterion": nn.CrossEntropyLoss(), "weight": 1.0,},
+            # {"criterion": CrossEntropyLabelSmooth(num_classes=class_num), "weight": 1.0,},
+            # {"criterion": TripletLoss(margin="0.3", metric="euclidean"), "weight": 1.0,},
+            {"criterion": TripletLoss_WRT(), "weight": 1.0,},
+        ]
+    )
+else:
+    criterion = Criterion(
+        [
+            {"criterion": nn.CrossEntropyLoss(), "weight": 1.0,},
+            # {"criterion": CrossEntropyLabelSmooth(num_classes=class_num), "weight": 1.0,},
+            {
+                "criterion": TripletLoss(margin="0.3", metric="euclidean"),
+                "weight": 1.0,
+            },
+        ]
+    )
 
 # build optimizer
 if args.optim == "sgd":
@@ -129,12 +161,14 @@ if args.optim == "sgd":
     lr_scheduler = CustomMultiStepLR(
         optimizer, milestones=[200, 400], gamma=0.1, warmup_epochs=100,
     )
+
 else:
     args.lr = 0.00035
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
     lr_scheduler = WarmupMultiStepLR(
         optimizer, milestones=[200, 400], gamma=0.1, warmup_epochs=100,
     )
+
 
 optimizer = Optimizer(optimizer=optimizer, lr_scheduler=lr_scheduler, max_epochs=800)
 
