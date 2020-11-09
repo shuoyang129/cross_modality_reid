@@ -50,8 +50,9 @@ class OriTripletLoss(nn.Module):
         loss = self.ranking_loss(dist_an, dist_ap, y)
 
         # compute accuracy
-        correct = torch.ge(dist_an, dist_ap).sum().item()
-        return loss, correct
+        # correct = torch.ge(dist_an, dist_ap).sum().item()
+        # return loss, correct
+        return loss
 
 
 # Adaptive weights
@@ -107,8 +108,9 @@ class TripletLoss_WRT(nn.Module):
         loss = self.ranking_loss(closest_negative - furthest_positive, y)
 
         # compute accuracy
-        correct = torch.ge(closest_negative, furthest_positive).sum().item()
-        return loss, correct
+        # correct = torch.ge(closest_negative, furthest_positive).sum().item()
+        # return loss, correct
+        return loss
 
 
 def pdist_torch(emb1, emb2):
